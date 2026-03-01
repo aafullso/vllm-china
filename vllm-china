@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+vLLM-China CLI - 本地LLM推理引擎中文工具
+"""
+
+import sys
+import subprocess
+from typing import Dict
+
+# 颜色输出
+class Colors:
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    RESET = '\033[0m'
+
+def print_success(msg):
+    print(f"{Colors.GREEN}{Colors.BOLD}✓{Colors.RESET} {msg}")
+
+def print_info(msg):
+    print(f"{Colors.BLUE}{msg}{Colors.RESET}")
+
+def print_warning(msg):
+    print(f"{Colors.YELLOW}{msg}{Colors.RESET}")
+
+def print_error(msg):
+    print(f"{Colors.RED}{Colors.BOLD}✗{Colors.RESET} {msg}", file=sys.stderr)
+
+def print_header(msg):
+    print(f"\n{Colors.CYAN}{Colors.BOLD}{'='*60}{Colors.RESET}")
+    print(f"{Colors.CYAN}{Colors.BOLD}{msg.center(60)}{Colors.RESET}")
+    print(f"{Colors.CYAN}{Colors.BOLD}{'='*60}{Colors.RESET}\n")
+
+# 国内模型列表
+CHINA_MODELS: Dict[str, str] = {
+    "qwen-7b-chat": "通义千问 7B",
+    "qwen-14b-chat": "通义千问 14B",
+    "baichuan-7b-chat": "百川 7B",
+    "baichuan-13b-chat": "百川 13B",
+    "chatglm3-6b": "智谱 ChatGLM3 6B",
+    "glm-4-9b-chat": "智谱 GLM-4 9B",
+    "yi-6b-chat": "零一万物 Yi 6B",
+    "yi-34b-chat": "零一万物 Yi 34B",
+    "internlm-7b-chat": "上海AI实验室 InternLM 7B",
+    "internlm2-20b-chat": "上海AI实验室 InternLM2 20B",
+}
+
+def check_vllm():
+    """检查vLLM是否安装"""
+    try:
+        import vllm
+        print_success(f"vLLM已安装: v{vllm.__version__}")
+        print_info(f"vLLM位置: {vllm.__file__}")
+        return True
+    except ImportError as e:
+        print_error(f"vLLM未安装: {e}")
+        print_info("请运行: pip install vllm")
+        return False
+    except Exception as e:
+        print_error(f"检查vLLM时出错: {e}")
+        return False
+
+def list_models():
+    """列出所有支持的模型"""
+    print_header("支持的国内模型列表")
+
+    print_info("中文模型:\n")
+    for model, desc in CHINA_MODELS.items():
+        print(f"  {model:<30} - {desc}")
+
+    print(f"\n{Colors.CYAN}总计: {len(CHINA_MODELS)} 个国内模型{Colors.RESET}")
+
+def serve_model(model: str, device: str = "cuda", dtype: str = "float16"):
+    """启动模型推理服务"""
+    print_header(f"启动模型: {model}")
+
+    print_info(f"设备: {device}")
+    print_info(f"数据类型: {dtype}\n")
+
+    try:
+        cmd = [
+            "python", "-m", "vllm.entrypoints.openai.api_server",
+            "--model", model,
+            "--device", device,
+            "--dtype", dtype,
+            "--trust-remote-code"
+        ]
+
+        print_info(f"执行命令: {' '.join(cmd)}\n")
+        subprocess.run(cmd)
+
+    except KeyboardInterrupt:
+        print_warning("\n\n服务已停止")
+
+def interactive_menu():
+    """交互式菜单"""
+    while True:
+        print_header("vLLM-China - 本地LLM推理引擎")
+
+        print(f"  1. {Colors.BOLD}查看模型列表{Colors.RESET} - 列出所有支持的模型")
+        print(f"  2. {Colors.BOLD}启动模型{Colors.RESET} - 选择模型并启动推理服务")
+        print(f"  3. {Colors.BOLD}检查版本{Colors.RESET} - 检查vLLM是否安装")
+        print(f"  4. {Colors.BOLD}退出{Colors.RESET}")
+
+        choice = input(f"\n{Colors.CYAN}请选择操作 (1-4): {Colors.RESET}")
+
+        if choice == "1":
+            list_models()
+
+        elif choice == "2":
+            model = input(f"{Colors.CYAN}输入模型名称: {Colors.RESET}")
+            device = input(f"{Colors.CYAN}输入设备 (cuda/cpu): {Colors.RESET}") or "cuda"
+            dtype = input(f"{Colors.CYAN}输入数据类型 (float16/bfloat16): {Colors.RESET}") or "float16"
+
+            if model not in CHINA_MODELS:
+                print_error(f"未知模型: {model}")
+                continue
+
+            serve_model(model, device, dtype)
+
+        elif choice == "3":
+            check_vllm()
+
+        elif choice == "4":
+            print_info("再见！")
+            sys.exit(0)
+
+        else:
+            print_error("无效的选择，请重试")
+
+def main():
+    """主函数"""
+    if len(sys.argv) < 2:
+        interactive_menu()
+        return
+
+    command = sys.argv[1].lower()
+
+    if command == "menu":
+        interactive_menu()
+
+    elif command == "list-models":
+        list_models()
+
+    elif command == "check":
+        check_vllm()
+
+    elif command == "serve":
+        # serve command: vllm-china serve --model xxx
+        model = None
+        device = "cuda"
+        dtype = "float16"
+
+        for i in range(2, len(sys.argv)):
+            if sys.argv[i] == "--model" and i + 1 < len(sys.argv):
+                model = sys.argv[i + 1]
+            elif sys.argv[i] == "--device":
+                device = sys.argv[i + 1]
+            elif sys.argv[i] == "--dtype":
+                dtype = sys.argv[i + 1]
+
+        if not model:
+            print_error("请指定 --model 参数")
+            sys.exit(1)
+
+        if model not in CHINA_MODELS:
+            print_error(f"未知模型: {model}")
+            sys.exit(1)
+
+        serve_model(model, device, dtype)
+
+    else:
+        print_error(f"未知命令: {command}")
+        print_info("可用命令: menu, list-models, check, serve")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
