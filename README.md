@@ -37,7 +37,7 @@
 
 ```bash
 # 方式1：一键安装
-curl -sSfL https://raw.githubusercontent.com/chenyongchao1223/vllm-china/main/install.sh | bash
+curl -sSfL https://raw.githubusercontent.com/aafullso/vllm-china/main/install.sh | bash
 
 # 方式2：手动安装
 python3 -m venv venv
@@ -83,13 +83,13 @@ vllm-china serve --model qwen-7b-chat --device cuda
 
 ## 📧 联系方式
 
-- GitHub: [chenyongchao1223](https://github.com/chenyongchao1223)
+- GitHub: [aafullso](https://github.com/aafullso)
 - Email: 133301159@qq.com
 
 ---
 
 **GitHub Stars订阅**：
-[![Star History Chart](https://api.star-history.com/svg?repos=chenyongchao1223/vllm-china&type=Date)](https://star-history.com/#chenyongchao1223/vllm-china&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=aafullso/vllm-china&type=Date)](https://star-history.com/#aafullso/vllm-china&Date)
 
 ---
 
